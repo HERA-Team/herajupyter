@@ -91,7 +91,7 @@ class dataset(object):
         info, data, flags = capo.miriad.read_files(filelist, 'auto', pol, decimate)
 
         # make numpy array of shape (ntimes, nants, nchan)
-        data = np.array([data[key][pol] for key in day.autokeys])
+        data = np.array([data[key][pol] for key in self.autokeys])
         return np.rollaxis(data, 1)
 
 
@@ -102,19 +102,10 @@ def exploredata(data, slider='chans', stack='ants'):
     assert slider in axdict.keys() and stack in axdict.keys(), 'slider or stack param not allowed'
 
     slax = axdict[slider]
-    stax = axdict[stack]
-    if stax > slax: 
-        stax = stax - 1 # account for axis shift after first 'take'
-
-    try:
-        slmax = len(getattr(day, slider))
-    except AttributeError:
-        slmax = len(data)
-
-    try:
-        stmax = len(getattr(day, stack))
-    except AttributeError:
-        stmax = len(data)
+    # need to account for axis shift after first 'take'
+    stax = axdict[stack] if axdict[stack] <= slax else axdict[stack] - 1
+    slmax = data.shape[axdict[slider]]
+    stmax = data.shape[axdict[stack]]
 
     xaxis = [name for name in axdict.keys() if name != slider and name != stack][0]
     
