@@ -9,18 +9,23 @@ class dataset(object):
     def __init__(self, selstr='zen.*.*.*.uvcRRE'):
         """ Default selstr enforces naming convention of zen.mjd.dd.pol.uvcRRE """
 
-        properties = ['ants', 'times', 'pols', 'chans', 'intsperfile']
+        __properties__ = ['ants', 'times', 'pols', 'chans', 'intsperfile']
         
+        for prop in __properties__:
+            setattr(self, '_{0}'.format(prop), None)
+
         self._files = glob.glob(selstr)
 
-        for prop in properties:
-            setattr(self, '_{0}'.format(prop), None)
+        if self._files:
+            print('Found {0} files with times from {1} to {2}'.format(len(self._files), self.times[0], self.times[-1]))
+        else:
+            print('No files found.')
 
         
     @property
     def times(self):
         if not self._times:
-            self._times = list(set(['.'.join(ff.split('.')[1:3]) for ff in self._files]))
+            self._times = list(sorted(set(['.'.join(ff.split('.')[1:3]) for ff in self._files])))
 
         return self._times
 
