@@ -2,22 +2,27 @@ import capo, glob
 from ipywidgets import interact
 import numpy as np
 import pylab as pl
+import os.path
 
 class dataset(object):
     """ Objectify a day's worth of HERA/PAPER data """
 
-    def __init__(self, selstr='zen.*.*.*.uvcRRE'):
+    def __init__(self, visstr='zen.*.*.*.uvcRRE'):
         """ Default selstr enforces naming convention of zen.mjd.dd.pol.uvcRRE """
 
         __properties__ = ['ants', 'times', 'pols', 'chans', 'intsperfile']
-        
+
+        self.visstr = visstr
+        self.npzstr = visstr.rstrip('.uvcRRE') + '.npz'
+        self.workdir = os.path.abspath(os.path.dirname(self.visstr))
+
         for prop in __properties__:
             setattr(self, '_{0}'.format(prop), None)
 
-        self._files = glob.glob(selstr)
+        self._visfiles = glob.glob(visstr)
 
-        if self._files:
-            print('Found {0} files with times from {1} to {2}'.format(len(self._files), self.times[0], self.times[-1]))
+        if self._visfiles:
+            print('Found {0} files with times from {1} to {2}'.format(len(self._visfiles), self.times[0], self.times[-1]))
         else:
             print('No files found.')
 
@@ -25,7 +30,7 @@ class dataset(object):
     @property
     def times(self):
         if not self._times:
-            self._times = list(sorted(set(['.'.join(ff.split('.')[1:3]) for ff in self._files])))
+            self._times = list(sorted(set(['.'.join(ff.split('.')[1:3]) for ff in self._visfiles])))
 
         return self._times
 
@@ -33,7 +38,7 @@ class dataset(object):
     @property
     def pols(self):
         if not self._pols:
-            self._pols = list(set([ff.split('.')[3] for ff in self._files]))
+            self._pols = list(set([ff.split('.')[3] for ff in self._visfiles]))
         return self._pols
     
     
@@ -69,18 +74,26 @@ class dataset(object):
     def setdataproperties(self):
         """ Caches properties derived from data (which is slow) """
 
-        info, data, flags = capo.miriad.read_files([self._files[0]], 'auto', 'xx')
+        info, data, flags = capo.miriad.read_files([self._visfiles[0]], 'auto', 'xx')
         self._ants = sorted([key[0] for key in data.keys()])
         self._chans = range(data[data.keys()[0]]['xx'].shape[1])
         self._intsperfile = data[data.keys()[0]]['xx'].shape[0]
 
         
-    def listfiles(self, time='', pol=''):
+    def listvisfiles(self, time='', pol=''):
         """ Get file list filtered for given time and pol (strings) """
 
         assert isinstance(time, str) and isinstance(pol, str), 'time and pol should be strings'
 
-        return [ff for ff in self._files if time in ff and pol in ff]
+        return [ff for ff in self._visfiles if time in ff and pol in ff]
+
+
+    def listnpzfiles(self, time='', pol=''):
+        """ Get file list filtered for given time and pol (strings) """
+
+        assert isinstance(time, str) and isinstance(pol, str), 'time and pol should be strings'
+
+        return [ff for ff in glob.glob(self.npzstr) if time in ff and pol in ff]
 
     
     def getautos(self, time='', pol='xx', decimate=1):
