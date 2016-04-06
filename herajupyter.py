@@ -2,6 +2,7 @@ import capo, glob
 from ipywidgets import interact
 import numpy as np
 import pylab as pl
+import matplotlib.pyplot as plt
 import os.path
 
 class dataset(object):
@@ -101,7 +102,7 @@ class dataset(object):
         
         assert ',' not in pol, 'Select a single pol product from (xx, xy, yx, yy).'
 
-        filelist = self.listfiles(time, pol)
+        filelist = self.listvisfiles(time, pol)
         
         if decimate > self.intsperfile:
             print('Currently only able to decimate up to {} integrations'.format(self.intsperfile))
@@ -143,3 +144,83 @@ def exploredata(data, slider='chans', stack='ants'):
             
         print('Plotting {0} vs. {1}.'.format(f, xaxis))
         print('Slider for {0}. A line per {1}.'.format(slider, stack.rstrip('s')))
+
+
+def omni_check(npzfiles, pol):
+    """ Copy of omni_check to function with notebook interaction
+
+    npzfiles is a list of npz files
+    optional pol parameter is a string with comma-delimited pol
+    interact can choose 'chisq', 'gains', or 'chisqant'.
+    """
+
+#    set up data structures
+    if not pol:
+        pol = npzfiles[0].split('.')[3] #XXX hard-coded for *pol.npz files
+
+    chisqs = []
+    gains = {} #or chisqant values, depending on option
+
+    for i,filename in enumerate(npzfiles):
+        print('Reading {0}'.format(filename))
+        file = np.load(filename)
+
+        # reads *pol.npz files
+        try: 
+            chisq = file['chisq '+str(pol)]
+        except: #reads .npz files
+            chisq = file['chisq']
+        for t in range(len(chisq)):
+            chisqs.append(chisq[t])
+
+        for key in file.keys(): #loop over antennas
+            if key[0] != '<' and key[0] != '(' and key[0].isalpha() != True:
+                gain = file[key]
+                antnum = key[:-1]
+                try: gains[antnum].append(gain)
+                except: gains[antnum] = [gain]
+                vmax=1.5
+            if key[0] == 'c' and len(key) > 5: #if plotting chisq per ant
+                gain = file[key]
+                antnum = key.split('chisq')[1][:-1]
+                try: gains[antnum].append(gain)
+                except: gains[antnum] = [gain]
+                vmax=2
+        for key in gains.keys():
+            gains[key] = np.vstack(np.abs(gains[key])) #cool thing to stack 2D arrays that only match in 1 dimension
+            mk = np.ma.masked_where(gains[key] == 1,gains[key]).mask #flags
+            gains[key] = np.ma.masked_array(gains[key],mask=mk) #masked array
+
+    @interact(type=['gains', 'chisq', 'chisqant'])
+    def omni_check_plot(type):
+        ### Plot ChiSq ####
+        if type ==  'chisq':
+            cs = np.array(chisqs)
+            plt.imshow(np.log(cs),aspect='auto',interpolation='nearest',vmax=7,vmin=-6)
+            plt.xlabel('Freq Channel',fontsize=10)
+            plt.ylabel('Time',fontsize=10)
+            plt.tick_params(axis='both',which='major',labelsize=8)
+            plt.title('Omnical ChiSquare',fontsize=12)
+            plt.colorbar()
+            plt.show()
+
+        ### Plot Gains ###
+        elif type == 'gains' or type == 'chisqant':
+            subplotnum = 1
+            plotnum = 1
+            plt.figure(plotnum,figsize=(10,10))
+            for ant in gains.keys(): #loop over antennas
+                if subplotnum == 26:
+                #break #only generate one page of plots (faster for testing) 
+                    plotnum += 1
+                    plt.figure(plotnum,figsize=(10,10))
+                    subplotnum = 1
+                plt.subplot(5,5,subplotnum)
+                plt.imshow(gains[ant],vmax=vmax,aspect='auto',interpolation='nearest')
+                plt.title(ant,fontsize=10)
+                plt.tick_params(axis='both',which='major',labelsize=6)
+                plt.tight_layout()
+                subplotnum += 1
+            plt.show()
+
+
