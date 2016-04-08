@@ -4,6 +4,8 @@ import numpy as np
 import pylab as pl
 import matplotlib.pyplot as plt
 import os.path
+from mpldatacursor import datacursor
+
 
 class dataset(object):
     """ Objectify a day's worth of HERA/PAPER data """
@@ -114,8 +116,8 @@ class dataset(object):
         return np.rollaxis(data, 1)
 
 
-def exploredata(data, slider='chans', stack='ants'):
-    """ Set up interactive plot for 3d data (ints, ants, chans). """
+def exploredata1d(data, slider='chans', stack='ants'):
+    """ Set up interactive 1d (line) plotting for vis data of dimension (ints, ants, chans). """
     
     axdict = {'ints': 0, 'ants': 1, 'chans': 2}
     assert slider in axdict.keys() and stack in axdict.keys(), 'slider or stack param not allowed'
@@ -140,10 +142,34 @@ def exploredata(data, slider='chans', stack='ants'):
         fcn =  fcndict[f]
         
         for st in range(stmax):
-            pl.plot(fcn(data.take(sl, axis=slax).take(st, axis=stax)))
+            pl.plot(fcn(data.take(sl, axis=slax).take(st, axis=stax)), label='{0} {1}'.format(stack.rstrip('s'), st))
             
         print('Plotting {0} vs. {1}.'.format(f, xaxis))
         print('Slider for {0}. A line per {1}.'.format(slider, stack.rstrip('s')))
+        print('Click on a line to see {0} number'.format(stack.rstrip('s')))
+    datacursor(formatter='{label}'.format)
+
+
+def exploredatawf(data):
+    """ Set up interactive waterfall plot from vis data of dimension (ints, ants, chans). """
+    
+    fcndict = {'Real': np.real, 'Imag': np.imag, 'Amp': np.abs, 'Phase': np.angle}
+    nints, nants, nchans = data.shape
+
+    @interact(ant=(0, nants, 1), f=['Real', 'Imag', 'Amp', 'Phase'])
+    def plotautos(ant, f):
+        pl.figure(figsize=(15,8))
+        pl.clf()
+        pl.xlabel('Chans')
+        pl.ylabel('Ints')
+        
+        fcn =  fcndict[f]
+        
+        pl.imshow(fcn(data[:,ant,:]), interpolation='nearest', origin='lower', aspect='equal')
+
+        print('Plotting ints vs chans.')
+        print('Slider for ants.')
+#        print('Click on a line to see {0} number'.format(axdict[stack].rstrip('s')))
 
 
 def omni_check(npzfiles, pol):
