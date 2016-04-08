@@ -20,3 +20,9 @@ See a demo HERA (PAPER) pipeline processing in notebook at [https://github.com/c
 ![Interactive 1d plots](explore1d.png)
 
 ![Interactive omnicheck script](omnicheck.png)
+
+## Installation
+
+* git clone caseyjlaw/herajupyter.git
+* cd herajupyter
+* python setup.py install
