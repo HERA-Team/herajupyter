@@ -12,6 +12,6 @@ See a demo HERA (PAPER) pipeline processing in notebook at [https://github.com/c
 
 ## Screen shots
 
-[explore1d.png]
+![Interactive 1d plots](explore1d.png)
 
-[omnicheck.png]
+![Interactive omnicheck script](omnicheck.png)
