@@ -23,6 +23,6 @@ See a demo HERA (PAPER) pipeline processing in notebook at [https://github.com/c
 
 ## Installation
 
-* git clone http://github.com/caseyjlaw/herajupyter.git
-* cd herajupyter
-* python setup.py install
+    git clone http://github.com/caseyjlaw/herajupyter.git
+    cd herajupyter
+    python setup.py install
